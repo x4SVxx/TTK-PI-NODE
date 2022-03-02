@@ -2,38 +2,52 @@ import websockets
 import asyncio
 import random
 import json
-
-PORT = 8099
+from websockets import WebSocketServerProtocol
 
 with open('BD.json') as BD:
     BD_DATA = json.load(BD)
 
-authorized_clients = []
+class Server:
 
-async def server(websocket, path):
-    print("CLIENT CONNECTED")
+    authorized_clients = set()
 
-    try:
-        async for msg in websocket:
-            split_msg = msg.split()
-            detected_flag = False
-            for sections, clients in BD_DATA.items():
-                for i in range(len(clients)):
-                    if clients[i]['Client_login'] == split_msg[2] and \
-                            clients[i]['Client_password'] == split_msg[3]:
-                        authorized_clients.append(clients[i]['Client_login'])
-                        await websocket.send(str(random.randint(0, 9)))
-                        detected_flag = True
-            if not detected_flag:
-                await websocket.send("EXIT PLEASE")
-    except:
-        print("CLIENT DISCONNECT")
+    async def register(self, ws: WebSocketServerProtocol):
+        # self.authorized_clients.add(ws)
+        try:
+            async for message in ws:
+                split_message = message.split()
+                for i in range(len(BD_DATA['Clients'])):
+                    if BD_DATA['Clients'][i]['Client_login'] == split_message[2] and \
+                            BD_DATA['Clients'][i]['Client_password'] == split_message[3]:
+                        self.authorized_clients.add(ws)
+                        break
+        except:
+            pass
 
-async def main():
-    tasks = []
+    async def unregister(self, ws: WebSocketServerProtocol):
+        self.authorized_clients.remove(ws)
 
-start_server = websockets.serve(server, "localhost", PORT)
-print("SERVER STARTED on port : " + str(PORT))
+    async def distribute(self, ws: WebSocketServerProtocol):
+        async for message in ws:
+            if self.authorized_clients:
+                for client in self.authorized_clients:
+                    await client.send(str(random.randint(0, 9)))
+
+    async def ws_handler(self, ws: WebSocketServerProtocol):
+        await self.register(ws)
+        try:
+            await self.distribute(ws)
+        except:
+            pass
+        finally:
+            await self.unregister(ws)
+
+
+
+port = 8088
+server = Server()
+start_server = websockets.serve(server.ws_handler, "localhost", port)
+print("SERVER STARTED on port : " + str(port))
 
 asyncio.get_event_loop().run_until_complete(start_server)
 asyncio.get_event_loop().run_forever()
