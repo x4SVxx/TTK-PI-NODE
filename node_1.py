@@ -27,7 +27,7 @@ class Node:
 
     async def node_command_hadler(self, ws):
         while True:
-            self.command = await ainput("COMMAND - ")
+            self.command = await ainput()
 
             if self.command == "authorization":
                 await ws.send(json.dumps({"action": "authorization", "login": self.login, "password": self.password}))
@@ -36,15 +36,15 @@ class Node:
                 await ws.send(json.dumps({"action": "getconfig", "apikey": self.apikey}))
 
     async def produce(self, ws):
-        message = {}
-        message["number"] = self.buffer.pop(0)
-        message["action"] = "anchor"
-        await ws.send(json.dumps(message))
+        await ws.send(json.dumps({"action": "anchor", "number": self.buffer.pop(0)}))
 
     async def node_receive(self, ws):
         while True:
             message = json.loads(await ws.recv())
-            print("MESSAGE " + message)
+            print("MESSAGE from SERVER " + str(message))
+
+            if message["action"] == "warning":
+                print(message["warning"])
 
             if message["action"] == "apikey":
                 self.apikey = message["apikey"]
