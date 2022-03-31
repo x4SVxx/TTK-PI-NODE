@@ -1,53 +1,70 @@
 import websockets
 import asyncio
-import random
 import json
-from websockets import WebSocketServerProtocol
+import string
+from client_node import Client_node
+from aioconsole import ainput
+import secrets
+
 
 with open('BD.json') as BD:
     BD_DATA = json.load(BD)
 
+with open('anchors.json') as anchors:
+    anchors_config = json.load(anchors)
+
+def generate_apikey():
+    letters_and_digits = string.ascii_letters + string.digits
+    apikey = ''.join(secrets.choice(letters_and_digits) for i in range(30))
+    return apikey
+
+
 class Server:
 
-    authorized_clients = set()
+    def __init__(self):
+        self.authorized_nodes = set()
+        self.command = ""
 
-    async def register(self, ws: WebSocketServerProtocol):
-        # self.authorized_clients.add(ws)
-        try:
-            async for message in ws:
-                split_message = message.split()
-                for i in range(len(BD_DATA['Clients'])):
-                    if BD_DATA['Clients'][i]['Client_login'] == split_message[2] and \
-                            BD_DATA['Clients'][i]['Client_password'] == split_message[3]:
-                        self.authorized_clients.add(ws)
-                        break
-        except:
-            pass
+    async def server_handler(self, ws):
+        await asyncio.gather(self.server_command_handler(ws), self.server_receive(ws))
 
-    async def unregister(self, ws: WebSocketServerProtocol):
-        self.authorized_clients.remove(ws)
+    async def server_command_handler(self, ws):
+        while True:
+            self.command = self.command = await ainput("COMMAND - ")
+            if self.command == "setconfig":
+                await ws.send((json.dumps({"action": "setconfig", "data": json.dumps(anchors_config)})))
+            elif self.command == "start":
+                await ws.send((json.dumps({"action": "start"})))
+            elif self.command =="stop":
+                await ws.send((json.dumps({"action": "stop"})))
+            elif self.command =="gettasks":
+                await ws.send((json.dumps({"action": "gettasks"})))
 
-    async def distribute(self, ws: WebSocketServerProtocol):
-        async for message in ws:
-            if self.authorized_clients:
-                for client in self.authorized_clients:
-                    await client.send(str(random.randint(0, 9)))
+    async def server_receive(self, ws):
+        while True:
+            message = json.loads(await ws.recv())
+            print("MESSAGE " + message)
 
-    async def ws_handler(self, ws: WebSocketServerProtocol):
-        await self.register(ws)
-        try:
-            await self.distribute(ws)
-        except:
-            pass
-        finally:
-            await self.unregister(ws)
+            if message["action"] == "authorization":
+                await self.authorization(message, ws)
+
+    async  def authorization(self, message, ws):
+        for i in range(len(BD_DATA["Nodes"])):
+            if BD_DATA["Nodes"][i]["Node_login"] == message["login"] and \
+                    BD_DATA["Nodes"][i]["Node_password"] == message["password"]:
+                apikey = generate_apikey()
+                client_node = Client_node(BD_DATA["Nodes"][i]["Node_ID"], message["login"], message["password"], apikey, ws)
+                self.authorized_nodes.add(client_node)
+                await client_node.ws.send((json.dumps({"action": "apikey", "apikey": apikey})))
+                print(str(BD_DATA["Nodes"][i]["Node_ID"]) + " AUTHORIZED")
+                break
 
 
-
-port = 8088
-server = Server()
-start_server = websockets.serve(server.ws_handler, "localhost", port)
-print("SERVER STARTED on port : " + str(port))
-
-asyncio.get_event_loop().run_until_complete(start_server)
-asyncio.get_event_loop().run_forever()
+if __name__ == '__main__':
+    port = 8088
+    server = Server()
+    start_server = websockets.serve(server.server_handler, "localhost", port, ping_interval=None)
+    print("SERVER STARTED on port : " + str(port))
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(start_server)
+    loop.run_forever()

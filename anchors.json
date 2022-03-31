@@ -1,0 +1,51 @@
+{
+ "Anchor_1": {
+  "ip": "192.168.99.3",
+  "number": 1,
+  "adrx": 16492,
+  "adtx": 16492,
+  "x": 11.57,
+  "y": 5.38,
+  "z": 2.72,
+  "role": "Slave",
+  "masternumber": 2,
+  "lag": 2000
+ },
+ "Anchor_2": {
+  "ip": "192.168.99.5",
+  "number": 2,
+  "adrx": 16492,
+  "adtx": 16492,
+  "x": 11.57,
+  "y": 0.54,
+  "z": 2.72,
+  "role": "Master",
+  "masternumber": 0,
+  "lag": 2000
+ },
+  "Anchor_3": {
+  "ip": "192.168.99.4",
+  "number": 3,
+  "adrx": 16492,
+  "adtx": 16492,
+  "x": 0.51,
+  "y": 0.42,
+  "z": 2.64,
+  "role": "Slave",
+  "masternumber": 2,
+  "lag": 3000
+ },
+ "Anchor_4": {
+  "ip": "192.168.99.6",
+  "number": 4,
+  "adrx": 16492,
+  "adtx": 16492,
+  "x": 0.72,
+  "y": 2.68,
+  "z": 2.68,
+  "role": "Slave",
+  "masternumber": 2,
+  "lag": 4000
+ }
+}
+

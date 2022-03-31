@@ -1,14 +1,14 @@
 {
-  "Clients": [
+  "Nodes": [
     {
-      "Client_ID": "CLIENT_NUMBER_1",
-      "Client_login": "Client_1",
-      "Client_password": "0001"
+      "Node_ID": "ID_1",
+      "Node_login": "Node_1",
+      "Node_password": "0001"
     },
     {
-      "Client_ID": "CLIENT_NUMBER_2",
-      "Client_login": "Client_2",
-      "Client_password": "0002"
+      "Node_ID": "ID_2",
+      "Node_login": "Node_2",
+      "Node_password": "0002"
     }
   ]
 }
