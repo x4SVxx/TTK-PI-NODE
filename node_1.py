@@ -60,10 +60,10 @@ class Node:
                             break
                     if new_anchor_flag:
                         print("NEW ANCHOR")
-                        # anchor = Anchor(config)
-                        # self.anchors.append(anchor)
-                        # anchor_config = Config()
-                        # self.anchors_tasks.append(anchor.anchor_handler(self.buffer, anchor_config))
+                        anchor = Anchor(config)
+                        self.anchors.append(anchor)
+                        anchor_config = Config()
+                        self.anchors_tasks.append(anchor.anchor_handler(self.buffer, anchor_config))
 
             if message["action"] == "start":
                 await asyncio.gather(*self.anchors_tasks)
