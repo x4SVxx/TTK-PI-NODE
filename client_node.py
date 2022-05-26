@@ -2,9 +2,12 @@
 
 class Client_node:
 
-    def __init__(self, ID, login, password, apikey, ws):
-        self.ID = ID
+    def __init__(self, roomid, login, password, apikey, ws, clientid, roomname):
+        self.roomid = roomid
         self.login = login
         self.password = password
         self.apikey = apikey
         self.ws = ws
+
+        self.clientid = clientid
+        self.roomname = roomname

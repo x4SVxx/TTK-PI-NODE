@@ -13,6 +13,9 @@ with open('BD.json') as BD:
 with open('anchors.json') as anchors:
     anchors_config = json.load(anchors)
 
+with open('rf_params.json') as rf_params:
+    rf_config = json.load(rf_params)
+
 def generate_apikey():
     letters_and_digits = string.ascii_letters + string.digits
     apikey = ''.join(secrets.choice(letters_and_digits) for i in range(30))
@@ -32,40 +35,39 @@ class Server:
         while True:
             self.command = self.command = await ainput()
             split_command = self.command.split()
-            ws = None
-            ws_flag = False
+            ID_flag = False
             for node in self.authorized_nodes:
-                if split_command[1] == node.ID:
-                    ws = node.ws
-                    ws_flag = True
-            if ws_flag:
-                if split_command[0] == "setconfig":
-                    await ws.send((json.dumps({"action": "setconfig", "data": json.dumps(anchors_config)})))
-                elif split_command[0] == "start":
-                    await ws.send((json.dumps({"action": "start"})))
-                elif split_command[0] =="stop":
-                    await ws.send((json.dumps({"action": "stop"})))
-                elif split_command[0] =="gettasks":
-                    await ws.send((json.dumps({"action": "gettasks"})))
-            else:
+                if split_command[1] == node.roomid:
+                    ID_flag = True
+                    if split_command[0] == "SetConfig":
+                        await node.ws.send((json.dumps({"action": "SetConfig", "apikey": node.apikey, "data_anchors": json.dumps(anchors_config)})))
+                    elif split_command[0] == "SetRfConfig":
+                        await node.ws.send((json.dumps({"action": "SetRfConfig", "apikey": node.apikey, "data_rf_config": json.dumps(rf_config)})))
+                    elif split_command[0] == "start":
+                        await node.ws.send((json.dumps({"action": "Start", "apikey": node.apikey,})))
+                    elif split_command[0] =="stop":
+                        await node.ws.send((json.dumps({"action": "Stop", "apikey": node.apikey,})))
+                    else:
+                        print("UNKNOWN COMMAND")
+                    break
+            if not ID_flag:
                 print("UNKNOWN NODE ID")
 
     async def server_receive(self, ws):
         while True:
             message = json.loads(await ws.recv())
-
             authorization_flag = False
             node_ID = ""
             for node in self.authorized_nodes:
                 if ws == node.ws:
                     authorization_flag = True
-                    node_ID = node.ID
+                    node_ID = node.roomid
             if not authorization_flag:
                 print("MESSAGE from unknown node: " + str(message))
             else:
                 print("MESSAGE from node " + node_ID + " " + str(message))
 
-            if message["action"] == "authorization":
+            if message["action"] == "Login":
                 authorization_flag = False
                 for node in self.authorized_nodes:
                     if ws == node.ws:
@@ -76,14 +78,15 @@ class Server:
                     await ws.send((json.dumps({"action": "warning", "warning": "You are already authorized"})))
 
     async  def authorization(self, message, ws):
-        for i in range(len(BD_DATA["Nodes"])):
-            if BD_DATA["Nodes"][i]["Node_login"] == message["login"] and \
-                    BD_DATA["Nodes"][i]["Node_password"] == message["password"]:
+        for number, node in BD_DATA.items():
+            if node["Node_login"] == message["login"] and \
+                    node["Node_password"] == message["password"] and\
+                    node["Node_roomid"] == message["roomid"]:
                 apikey = generate_apikey()
-                client_node = Client_node(BD_DATA["Nodes"][i]["Node_ID"], message["login"], message["password"], apikey, ws)
+                client_node = Client_node(message["roomid"], message["login"], message["password"], apikey, ws, node["Node_clientid"], node["Node_roomname"])
                 self.authorized_nodes.append(client_node)
-                await client_node.ws.send((json.dumps({"action": "apikey", "apikey": apikey})))
-                print(str(BD_DATA["Nodes"][i]["Node_ID"]) + " AUTHORIZED")
+                await client_node.ws.send((json.dumps({"action": "Login", "status": "true", "data": {"apikey": apikey, "clientid": node["Node_clientid"], "roomname": node["Node_roomname"]}})))
+                print(str(node["Node_roomid"]) + " AUTHORIZED")
                 break
 
 
