@@ -22,30 +22,6 @@
 "role": "Master",
 "masternumber": 0,
 "lag": 2000
-},
-{
-"ip": "192.168.99.4",
-"number": 3,
-"adrx": 16492,
-"adtx": 16492,
-"x": 0.51,
-"y": 0.42,
-"z": 2.64,
-"role": "Slave",
-"masternumber": 2,
-"lag": 3000
-},
-{
-"ip": "192.168.99.6",
-"number": 4,
-"adrx": 16492,
-"adtx": 16492,
-"x": 0.72,
-"y": 2.68,
-"z": 2.68,
-"role": "Slave",
-"masternumber": 2,
-"lag": 4000
 }
 ]
 

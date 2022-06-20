@@ -5,7 +5,8 @@
         "Node_login": "TestOrg",
         "Node_password": "TestOrgPass",
         "Node_clientid": "va4gerg-4rgs",
-        "Node_roomname": "node_1"
+        "Node_roomname": "node_1",
+        "Organization": "TestOrg"
         },
 "Node_2":
         {
@@ -13,6 +14,7 @@
         "Node_login": "Node_2",
         "Node_password": "0002",
         "Node_clientid": "vangterg-4yhs",
-        "Node_roomname": "node_2"
+        "Node_roomname": "node_2",
+        "Organization": "TestOrg"
         }
 }
