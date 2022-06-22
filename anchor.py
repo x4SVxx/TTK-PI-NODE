@@ -104,10 +104,16 @@ class Anchor:
                                                              self.ADTx,
                                                              rf_config["diagnostic"],
                                                              rf_config["lag"])
-        self.socket.sendall(RTLS_CMD_SET_CFG_CCP)
+        try:
+            self.socket.sendall(RTLS_CMD_SET_CFG_CCP)
+        except:
+            print("ERROR SET RF_CONFIG ON ANCHOR" + str(self.IP))
 
     async def start_spam(self):
-        self.socket.sendall(rm.build_RTLS_START_REQ(1))
+        try:
+            self.socket.sendall(rm.build_RTLS_START_REQ(1))
+        except:
+            print("ERROR START SPAM ON ANCOR" + str(self.IP))
 
     async def anchor_handler(self, buffer):
         while True:

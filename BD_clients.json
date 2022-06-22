@@ -1,0 +1,9 @@
+{
+"Client_1":
+        {
+        "Client_login": "TestOrg",
+        "Client_password": "TestOrgPass",
+        "Client_clientid": "va4gerg-4rgs",
+        "Organization": "TestOrg"
+        }
+}
