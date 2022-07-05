@@ -5,9 +5,9 @@ import string
 from client_node import Client_node
 from client_client import Client_client
 import secrets
+import random
 
 
-"""API"""
 """Каждое сообщение посылаемое на сервер должно соответствовать структуре"""
 """{"action": ..., "status": ..., "data": ...}"""
 """
@@ -21,11 +21,11 @@ import secrets
         Log - отправить лог клиенту
 """
 
-"""Загрузка баззы данных нод из JSON файла"""
+"""Загрузка базы данных нод из JSON файла"""
 with open('BD_nodes.json') as BD_NODES:
     BD_DATA_NODES = json.load(BD_NODES)
 
-"""Загрузка баззы данных клиентов из JSON файла"""
+"""Загрузка базы данных клиентов из JSON файла"""
 with open('BD_clients.json') as BD_CLIENTS:
     BD_DATA_CLIENTS = json.load(BD_CLIENTS)
 
@@ -33,7 +33,7 @@ with open('BD_clients.json') as BD_CLIENTS:
 """Функция генерации apikey - ключа безопасности для общения с нодой"""
 def generate_apikey():
     letters_and_digits = string.ascii_letters + string.digits
-    apikey = ''.join(secrets.choice(letters_and_digits + str(i)) for i in range(30))
+    apikey = ''.join(secrets.choice(letters_and_digits) + str(i) for i in range(15))
     return apikey
 
 
@@ -61,9 +61,12 @@ class Server:
                 if ws == client.ws:  # сравнение двух websocket-соединений
                     authorization_client_flag = True # активация флага авторизации
                     print("MESSAGE FROM CLIENT " + client.clientid + " " + str(message))
-            if not authorization_node_flag and not authorization_client_flag: # если флаг не сработал - сообщение от неизвестной ноды
+            if not authorization_node_flag and not authorization_client_flag: # если флаг не сработал - сообщение от неизвестного пользователя
                 print("MESSAGE FROM UNKNOW USER: " + str(message))
 
+            if "status" in message:
+                if message["status"] == "false":
+                    print(message)
             if "action" in message:
                 if message["action"] == "Login": # обтаботка авторизации ноды
                     await self.login_node(message, ws)
@@ -74,10 +77,13 @@ class Server:
                 elif message["action"] == "Log" and message["status"] == "true": # обработка логирования
                     for node in self.authorized_nodes: # пробежка по элементам массива авторизированных нод
                         if node.apikey == message["apikey"]: # сравнение apikey, если имеется схожий - прием логирования
-                            print("Log from node " + node.roomid + " " + str(message))
+                            print("Log from node " + node.roomid + " " + str(message["data"]))
                             for client in self.authorized_clients:
                                 if client.clientid == node.clientid:
-                                    await client.ws.send(json.dumps(message))
+                                    try:
+                                        await client.ws.send(json.dumps(message))
+                                    except:
+                                        pass
                                     break
 
                 elif message["action"] == "SetConfig" and message["status"] == "true": # обработка установки config
@@ -100,6 +106,8 @@ class Server:
                 elif message["action"] == "Start" and message["status"] == "true": # обработка команды start
                     for client in self.authorized_clients:
                         if client.apikey == message["apikey"]:
+                            # while True:
+                            #     await client.ws.send(json.dumps({"action": "Log", "status": "true", "data": {"name": "SD43", "x": random.random()*100, "y": random.random()*100}}))
                             for node in self.authorized_nodes:
                                 if node.clientid == client.clientid and node.roomid == message["roomid"]:
                                     await node.ws.send((json.dumps({"action": "Start", "status": "true"})))  # отправка сообщения с config на ноду
@@ -115,11 +123,24 @@ class Server:
 
     """Функция авторизации ноды"""
     async  def login_node(self, message, ws):
+        reauthorization_flag = False
+        """Проверка есть ли уже данная нода в авторизированных"""
         authorization_flag = False # флаг авторизации
         for node in self.authorized_nodes:
             if ws == node.ws: # сравнение двух websocket-соединений
                 authorization_flag = True # активация флага авторизации
-        if not authorization_flag: # если флаг не сработал - отправка ноды на авторизацию
+
+        """Проверка есть ли поля "status" и "action" в сообщении, если есть и поле "status" равно "false" -> отправляем ноду на переавторизацию"""
+        if "status" in message and "action" in message:
+            if message["status"] == "false" and message["action"] == "Login":
+                if authorization_flag:
+                    for node in self.authorized_nodes:
+                        if ws == node.ws:  # сравнение двух websocket-соединений
+                            self.authorized_nodes.remove(node) # удаление ноды из списка авторизированных нод, затем снятие флага авторизации и отправка на переавторизацию
+                authorization_flag = False
+                reauthorization_flag = True
+        """Сравнение параметров и авторизация ноды"""
+        if not authorization_flag and not reauthorization_flag: # если флаг не сработал - отправка ноды на авторизацию
             for number, node in BD_DATA_NODES.items():
                 if node["Node_login"] == message["login"] and \
                         node["Node_password"] == message["password"] and\
@@ -135,11 +156,24 @@ class Server:
 
     """Функция авторизации клиента"""
     async def login_client(self, message, ws):
+        reauthorization_flag = False
+        """Проверка есть ли уже данный клиент в авторизированных"""
         authorization_flag = False # флаг авторизации
         for client in self.authorized_clients:
             if ws == client.ws: # сравнение двух websocket-соединений
                 authorization_flag = True # активация флага авторизации
-        if not authorization_flag: # если флаг не сработал - отправка клиента на авторизацию
+
+        """Проверка есть ли поля "status" и "action" в сообщении, если есть и поле "status" равно "false" -> отправляем клиента на переавторизацию"""
+        if "status" in message and "action" in message:
+            if message["status"] == "false" and message["action"] == "Login":
+                if authorization_flag:
+                    for client in self.authorized_nodes:
+                        if ws == client.ws:  # сравнение двух websocket-соединений
+                            self.authorized_clients.remove(client) # удаление клиента из списка авторизированных клиентов, затем снятие флага авторизации и отправка на переавторизацию
+                authorization_flag = False
+                reauthorization_flag = True
+        """Сравнение параметров и авторизация клиента"""
+        if not authorization_flag and not reauthorization_flag: # если флаг не сработал - отправка клиента на авторизацию
             for number, client in BD_DATA_CLIENTS.items():
                 if client["Client_login"] == message["login"] and \
                         client["Client_password"] == message["password"]: # сравнение логина и пароля
@@ -147,7 +181,7 @@ class Server:
                     client_client = Client_client(client["Client_login"], ["Client_password"], client["Client_clientid"], client["Organization"], apikey, ws) # экземпляр класса client_client
                     self.authorized_clients.append(client_client) # добавление клиента в массив авторизированных клиентов
                     await client_client.ws.send((json.dumps({"action": "Login", "status": "true", "data": {"apikey": apikey}}))) # отпркавка сообщения об успешной авторизации клиенту и посыл apikey
-                    print("CLIENT" + " AUTHORIZED")
+                    print("CLIENT AUTHORIZED")
                     break
         else: # если флаг сработал - отправка сообщения клиенту об уже имеющейся авторизации
             await ws.send((json.dumps({"action": "login", "status": "false", "data": "You are already authorized"})))
@@ -158,5 +192,5 @@ if __name__ == '__main__':
     start_server = websockets.serve(server.server_handler, "localhost", port, ping_interval=None) # запуск сервера
     print("SERVER STARTED on port : " + str(port))
     loop = asyncio.get_event_loop() # асинхронная петля
-    loop.run_until_complete(start_server) # запуск асинхронной петли и функции обработки ноды
+    loop.run_until_complete(start_server) # запуск петли и функции обработки сервера
     loop.run_forever() # параметр петли: запускать всегда

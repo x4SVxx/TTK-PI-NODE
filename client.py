@@ -5,12 +5,8 @@ from aioconsole import ainput
 
 
 """Загрузка config из JSON файла"""
-with open('anchors2.json') as anchors:
+with open('anchors.json') as anchors:
     anchors_config = json.load(anchors)
-
-"""Загрузка config другой конфигурации из JSON файла"""
-with open('anchors2.json') as anchors2:
-    anchors_config2 = json.load(anchors2)
 
 """Загрузка rf_config из JSON файла"""
 with open('rf_params.json') as rf_params:
