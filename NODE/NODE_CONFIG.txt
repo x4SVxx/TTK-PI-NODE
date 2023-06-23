@@ -1,0 +1,5 @@
+login         :   TestOrg
+password      :   TestOrgPass
+roomid        :   1
+server_ip     :   127.0.0.1 10.3.168.123
+server_port   :   9000
