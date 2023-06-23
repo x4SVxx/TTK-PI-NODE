@@ -1,13 +1,13 @@
 [
-{
-"chnum": 2,
-"prf": 64,
-"datarate": 6.8,
-"preamblecode": 9,
-"preamblelen": 128,
-"pac": 16,
-"nsfd": 0,
-"diagnostic": 0,
-"lag": 20000
-}
+  {
+    "chnum": 2,
+    "prf": 64,
+    "datarate": 6.8,
+    "preamblecode": 9,
+    "preamblelen": 128,
+    "pac": 16,
+    "nsfd": 0,
+    "diagnostic": 0,
+    "lag": 20000
+  }
 ]

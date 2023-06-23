@@ -37,7 +37,7 @@ class Client:
             self.command = await ainput() # асинхронный ввод команды из консоли
 
             if self.command.split()[0] == "SetConfig":  # команада установки config
-                await ws.send((json.dumps({"action": "SetConfig", "roomid": self.command.split()[1], "status": "true", "apikey": self.apikey, "data": anchors_config}))) # отправка сообщения с config на сервер
+                await ws.send((json.dumps({"action": "SetConfig", "roomid": self.command.split()[1], "status": "true", "apikey": self.apikey, "anchors": anchors_config, "rf_config": rf_config}))) # отправка сообщения с config на сервер
 
             elif self.command.split()[0] == "SetRfConfig":  # команада установки rf_config
                 await ws.send((json.dumps({"action": "SetRfConfig", "roomid": self.command.split()[1], "status": "true", "apikey": self.apikey, "data": rf_config}))) # отправка сообщения с rf_config на сервер
@@ -46,7 +46,7 @@ class Client:
                 await ws.send((json.dumps({"action": "Start", "roomid": self.command.split()[1], "status": "true", "apikey": self.apikey}))) # отправка сообщения с командой start на сервер
 
             elif self.command.split()[0] == "Stop":  # команада стоп
-                await ws.send((json.dumps({"action": "Stop", "roomid": self.command.split()[1], "status": "true", "apikey": self.apikey}))) # отправка сообщения с командой stop на сервер
+                await ws.send((json.dumps({"action": "Stop", "roomid": self.command.split()[1], "status": "true", "apikey": self.apikey}))) # отправка сообщения с командой Stop на сервер
 
             else: # если ни одно условие не выполняется - сообщение о несуществующей команде
                 print("UNKNOWN COMMAND")
@@ -57,11 +57,11 @@ class Client:
             message = json.loads(await ws.recv()) # прием сообщения от сервера
             print("MESSAGE FROM SERVER: " + str(message))
 
-            if message["status"] == "false": # если статус false - пачать предупреждающего сообдения
-                print("---WARNING--- " + str(message["data"]) + " ---WARNING---")
-
-            elif message["action"] == "Login" and message["status"] == "true": # обработка авторизации
-                await self.login_on_the_server(message)
+            # if message["status"] == "false": # если статус false - пачать предупреждающего сообдения
+            #     print("---WARNING--- " + str(message["data"]) + " ---WARNING---")
+            if "action" in message:
+                if message["action"] == "Login" and message["status"] == "true": # обработка авторизации
+                    await self.login_on_the_server(message)
 
     """Функция приема аторизации на сервере"""
     async  def login_on_the_server(self, message):

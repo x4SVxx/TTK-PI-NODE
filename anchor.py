@@ -20,22 +20,30 @@ class Anchor:
         self.disconnect_counter = 0 # счетчик попыток принять сообщение от маяка, если привышает заданное число поднимаем флаг об отключении
 
         self.socket_flag = False # флаг проверки открытия socket-соединения
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
+        self.Connect()
+
+    def Connect(self):
         try:
+            self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            self.socket.settimeout(1.0) # timeout чтобы долго не ждать ответа от soket
             self.socket.connect((self.IP, 3000))
             self.socket.recv(3)
             data = self.socket.recv(500)
             msg = rm.decode_anchor_message(data)
             self.ID = msg["receiver"]
             self.name = str(hex(self.ID[1])[2:]) + str(hex(self.ID[0])[2:])
-            print(f"ANCHOR NUMBER {self.number} WITH NAME {self.name} [IP: {self.IP} ] CONNECTED")
+            if not self.disconnect_flag:
+                print(f"ANCHOR NUMBER {self.number} WITH NAME {self.name} [IP: {self.IP} ] CONNECTED")
+            if self.disconnect_flag:
+                print(f"ANCHOR NUMBER {self.number} WITH NAME {self.name} [IP: {self.IP} ] RECONNECTED")
             self.socket_flag = True
         except:
-            print(f"ANCHOR NUMBER {self.number} NOT CONNECTED")
+            print(f"ANCHOR NUMBER {self.number} [IP: {self.IP} ] NOT CONNECTED")
             self.socket_flag = False
 
-    async def reconfig(self, message):
+    async def Reconfig(self, message):
         self.IP = message["ip"]
         self.number = message["number"]
         self.x = message["x"]
@@ -51,7 +59,7 @@ class Anchor:
         self.lag = int(message["lag"])
         print(f"ANCHOR {self.number} [IP: {self.IP} ] RECONFIGURATED")
 
-    async def set_rf_config(self, rf_config):
+    async def SetRfConfig(self, rf_config):
         self.rf_config = rf_config
         PRF = {16: 1,
                64: 2}
@@ -84,56 +92,55 @@ class Anchor:
                                                              rf_config["lag"])
         try:
             self.socket.sendall(RTLS_CMD_SET_CFG_CCP)
+            if not self.disconnect_flag:
+                print(f"ANCHOR NUMBER {self.number} WITH NAME {self.name} [IP: {self.IP} ] SET RF CONFIG")
+            if self.disconnect_flag:
+                print(f"ANCHOR NUMBER {self.number} WITH NAME {self.name} [IP: {self.IP} ] RESET RF CONFIG")
         except:
             print(f"ERROR SET RF_CONFIG ON ANCHOR NUMBER {self.number} WITH NAME {self.name} [IP {self.IP} ]")
 
-    async def start_spam(self):
+    async def StartSpam(self):
         try:
             self.socket.sendall(rm.build_RTLS_START_REQ(1))
+            if not self.disconnect_flag:
+                print(f"ANCHOR NUMBER {self.number} WITH NAME {self.name} [IP: {self.IP} ] START")
+            if self.disconnect_flag:
+                print(f"ANCHOR NUMBER {self.number} WITH NAME {self.name} [IP: {self.IP} ] RESTART")
         except:
-            print(f"ERROR START SPAM ON ANCORNUMBER {self.number} WITH NAME {self.name} [IP {self.IP} ]")
+            print(f"ERROR START SPAM ON ANCOR NUMBER {self.number} WITH NAME {self.name} [IP {self.IP} ]")
 
-    async def anchor_handler(self, log_buffer):
+    async def Stop(self):
+        try:
+            self.socket.sendall(rm.build_RTLS_START_REQ(0))
+            print(f"ANCHOR NUMBER {self.number} WITH NAME {self.name} [IP: {self.IP} ] STOP")
+        except:
+            print(f"ERROR STOP ANCHOR NUMBER {self.number} WITH NAME {self.name} [IP {self.IP} ]")
+
+    async def AnchorHandler(self, log_buffer):
         while True:
             if self.disconnect_flag:
-                try:
-                    self.socket.connect((self.IP, 3000))
-                    self.socket.recv(3)
-                    data = self.socket.recv(500)
-                    msg = rm.decode_anchor_message(data)
-                    self.ID = msg["receiver"]
-                    self.name = str(hex(self.ID[1])[2:]) + str(hex(self.ID[0])[2:])
-                    print(f"ANCHOR NUMBER {self.number} WITH NAME {self.name} [IP: {self.IP} ] RECONNECTED")
-                    self.socket_flag = True
-                except:
-                    print(f"ANCHOR NUMBER {self.number} NOT RECONNECTED")
-                    self.socket_flag = False
-
-                await self.set_rf_config(self.rf_config)
-                await self.start_spam()
+                print("TRY RECONNECT ANCHOR")
+                self.Connect()
+                await self.SetRfConfig(self.rf_config)
+                await self.StartSpam()
                 self.disconnect_flag = False
-
             try:
                 header = self.socket.recv(3)
                 numberofbytes = header[1]
                 data = self.socket.recv(numberofbytes)
                 self.socket.recv(3)
-                msg = rm.decode_anchor_message(data)
-                msg["receiver"] = self.ID
-                if msg["type"] == "CS_TX":
-                    msg["sender"] = msg["receiver"]
-                log_buffer.append(msg)
-                print(msg)
+                message = rm.decode_anchor_message(data)
+                message["receiver"] = self.ID
+                if message["type"] == "CS_TX":
+                    message["sender"] = message["receiver"]
+                message["sender"] = str(hex(message["sender"][1])[2:]) + str(hex(message["sender"][0])[2:]) # для корректной отправки данных в формате JSON заменяем байтовое поле с названием маяка на его сокращенное название типа str
+                message["receiver"] = str(hex(message["receiver"][1])[2:]) + str(hex(message["receiver"][0])[2:])# для корректной отправки данных в формате JSON заменяем байтовое поле с названием маяка на его сокращенное название типа str
+                log_buffer.append(message)
+                print(message)
             except:
-                print("NOTHING")
+                print("NOTHING RECIEVE")
                 self.disconnect_counter += 1
-                if self.disconnect_counter == 50: # если посылок с маяка нет 50 тиков (10 секунд) поднимаем флаг disconnect
+                if self.disconnect_counter >= 5: # если посылок с маяка нет 50 тиков (10 секунд) поднимаем флаг disconnect
                     self.disconnect_flag = True
                     self.disconnect_counter = 0
             await asyncio.sleep(0.2)
-
-    async def stop(self):
-        try:
-            self.socket.sendall(rm.build_RTLS_START_REQ(0))
-        except:
-            print(f"ERROR STOP ANCHOR NUMBER {self.number} WITH NAME {self.name} [IP {self.IP} ]")

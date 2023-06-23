@@ -1,51 +1,51 @@
 [
-{
-"ip": "192.168.99.3",
-"number": 1,
-"adrx": 16492,
-"adtx": 16492,
-"x": 11.57,
-"y": 5.38,
-"z": 2.72,
-"role": "Slave",
-"masternumber": 2,
-"lag": 2000
-},
-{
-"ip": "192.168.99.5",
-"number": 2,
-"adrx": 16492,
-"adtx": 16492,
-"x": 11.57,
-"y": 0.54,
-"z": 2.72,
-"role": "Master",
-"masternumber": 0,
-"lag": 2000
-},
-{
-"ip": "192.168.99.4",
-"number": 3,
-"adrx": 16492,
-"adtx": 16492,
-"x": 0.51,
-"y": 0.42,
-"z": 2.64,
-"role": "Slave",
-"masternumber": 2,
-"lag": 3000
-},
-{
-"ip": "192.168.99.6",
-"number": 4,
-"adrx": 16492,
-"adtx": 16492,
-"x": 0.72,
-"y": 5.27,
-"z": 2.68,
-"role": "Slave",
-"masternumber": 2,
-"lag": 4000
-}
+  {
+    "ip": "192.168.99.9",
+    "number": 1,
+    "masternumber": 0,
+    "role": "Master",
+    "lag": 2000,
+    "adrx": 16492,
+    "adtx": 16492,
+    "x": 11.40,
+    "y": 5.24,
+    "z": 2.63
+  },
+  {
+    "ip": "192.168.99.12",
+    "number": 2,
+    "masternumber": 1,
+    "role": "Slave",
+    "lag": 2000,
+    "adrx": 16492,
+    "adtx": 16492,
+    "x": 11.38,
+    "y": 0.47,
+    "z": 2.84
+  },
+  {
+    "ip": "192.168.99.11",
+    "number": 3,
+    "masternumber": 1,
+    "role": "slave",
+    "lag": 3000,
+    "adrx": 16492,
+    "adtx": 16492,
+    "x": 0.48,
+    "y": 0.47,
+    "z": 2.67
+  },
+  {
+    "ip": "192.168.99.10",
+    "number": 4,
+    "masternumber": 1,
+    "role": "Slave",
+    "lag": 4000,
+    "adrx": 16492,
+    "adtx": 16492,
+    "x": 0.48,
+    "y": 5.24,
+    "z": 2.62
+  }
 ]
 
